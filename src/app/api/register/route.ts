@@ -6,12 +6,71 @@ import { NextResponse } from "next/server";
 export const POST = async (request: any) => {
   const { email, password } = await request.json();
 
+  if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
+    return NextResponse.json(
+      { errorString: "Email is invalid" },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  if (!password || password.length < 8) {
+    return NextResponse.json(
+      { errorString: "Password is too short" },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  if (!/\d/.test(password)) {
+    return NextResponse.json(
+      { errorString: "Password must contain at least one number" },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return NextResponse.json(
+      { errorString: "Password must contain at least one lowercase letter" },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return NextResponse.json(
+      { errorString: "Password must contain at least one uppercase letter" },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return NextResponse.json(
+      { errorString: "Password must contain at least one special character" },
+      {
+        status: 400,
+      }
+    );
+  }
+
   await connect();
 
   const existingUser = await User.findOne({ email });
 
   if (existingUser) {
-    return new NextResponse("Email is already in use", { status: 400 });
+    return NextResponse.json(
+      { errorString: "Email is already in use" },
+      {
+        status: 400,
+      }
+    );
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -19,11 +78,12 @@ export const POST = async (request: any) => {
   const newUser = new User({
     email,
     password: hashedPassword,
+    totpSecret: null,
   });
 
   try {
     await newUser.save();
-    return new NextResponse("user is registered", { status: 200 });
+    return new NextResponse("", { status: 200 });
   } catch (err: any) {
     return new NextResponse(err, {
       status: 500,

@@ -4,43 +4,64 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { setAuthCookie } from "../actions";
 
 export default function Login() {
-  const router = useRouter();
-  const [error, setError] = useState("");
 
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
-    return emailRegex.test(email);
-  };
+  const [error, setError] = useState<string | null>(null);
+  const [totpRequired, setTotpRequired] = useState<boolean>(false);
 
-  const submit = async (formData: FormData) => {
+  const handleSubmit = async (formData: FormData) => {
+    setError(null);
+
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    if (!isValidEmail(email)) {
-      setError("Email is invalid");
+    if (!email) {
+      setError("Email is required");
       return;
     }
 
-    if (!password || password.length < 8) {
-      setError("Password is invalid");
+    if (!password) {
+      setError("Password is required");
       return;
     }
 
-    const res = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
+    let totpCode = null;
+    if (totpRequired) {
+      totpCode = formData.get("totpCode") as string;
+      if (!totpCode || totpCode.length !== 6) {
+        setError("Invalid TOTP code");
+        return;
+      }
+    }
 
-    if (res?.error) {
-      setError("Invalid email or password");
-    } else {
-      setError("");
-      router.replace("/");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          totpCode,
+        }),
+      });
+
+      if (res.status === 200) {
+        const { token } = await res.json();
+        setAuthCookie(token);
+      } else if (res.status === 401) {
+        const { errorString, totpRequired } = await res.json();
+        setError(errorString);
+        setTotpRequired(totpRequired);
+      } else {
+        setError("Server error");
+      }
+    } catch (error) {
+      setError("Unexpected error");
+      console.log(error);
     }
   };
 
@@ -59,7 +80,7 @@ export default function Login() {
         </div>
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form className="space-y-6" action={submit}>
+          <form className="space-y-6" action={handleSubmit}>
             <div>
               <label
                 htmlFor="email"
@@ -96,6 +117,7 @@ export default function Login() {
                   </a>
                 </div>
               </div>
+
               <div className="mt-2">
                 <input
                   id="password"
@@ -108,6 +130,27 @@ export default function Login() {
               </div>
             </div>
 
+            {totpRequired && (
+              <div>
+                <label
+                  htmlFor="totpCode"
+                  className="block text-sm font-medium leading-6 text-gray-900"
+                >
+                  TOTP Code
+                </label>
+                <div className="mt-2">
+                  <input
+                    id="totpCode"
+                    name="totpCode"
+                    type="text"
+                    autoComplete="totpCode"
+                    required
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <button
                 type="submit"
@@ -115,7 +158,9 @@ export default function Login() {
               >
                 Sign in
               </button>
-              <p className="mt-2 text-center text-sm text-gray-500">{error}</p>
+              {error && (
+                <p className="mt-3 text-center text-sm text-red-500">{error}</p>
+              )}
             </div>
           </form>
 

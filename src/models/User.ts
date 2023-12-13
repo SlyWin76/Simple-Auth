@@ -11,6 +11,10 @@ const userSchema = new Schema(
     },
     password: {
       type: String,
+      required: true,
+    },
+    totpSecret: {
+      type: String,
       required: false,
     },
   },
@@ -18,3 +22,9 @@ const userSchema = new Schema(
 );
 
 export default mongoose.models.User || mongoose.model("User", userSchema);
+
+export type UserDocument = {
+  _id: string;
+  email: string;
+  totpSecret: string;
+};

@@ -7,25 +7,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function Register() {
-  const [error, setError] = useState("");
   const router = useRouter();
 
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
-    return emailRegex.test(email);
-  };
+  const [error, setError] = useState<string | null>(null);
 
   const submit = async (formData: FormData) => {
+    setError(null);
+
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    if (!isValidEmail(email)) {
-      setError("Email is invalid");
+    if (!email) {
+      setError("Email is required");
       return;
     }
 
-    if (!password || password.length < 8) {
-      setError("Password is invalid");
+    if (!password) {
+      setError("Password is required");
       return;
     }
 
@@ -40,15 +38,17 @@ export default function Register() {
           password,
         }),
       });
-      if (res.status === 400) {
-        setError("This email is already registered");
-      }
+
       if (res.status === 200) {
-        setError("");
         router.push("/login");
+      } else if (res.status === 400) {
+        const { errorString } = await res.json();
+        setError(errorString);
+      } else {
+        setError("Server error");
       }
     } catch (error) {
-      setError("Error, try again");
+      setError("Unexpected error");
       console.log(error);
     }
   };
@@ -116,9 +116,7 @@ export default function Register() {
               >
                 Register
               </button>
-              <p className="mt-2 text-center text-sm text-gray-500">
-                {error}
-              </p>
+              <p className="mt-3 text-center text-sm text-red-500">{error}</p>
             </div>
           </form>
 
