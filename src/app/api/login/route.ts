@@ -5,10 +5,9 @@ import connect from "@/utils/db";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import * as jose from "jose";
-import { authenticator } from "otplib";
 
 export const POST = async (request: any) => {
-  const { email, password, totpCode } = await request.json();
+  const { email, password } = await request.json();
 
   await connect();
 
@@ -31,28 +30,6 @@ export const POST = async (request: any) => {
           status: 401,
         }
       );
-    }
-
-    if (user.totpSecret !== null) {
-      if (!totpCode) {
-        return NextResponse.json(
-          { errorString: "TOTP code is required", totpRequired: true },
-          {
-            status: 401,
-          }
-        );
-      }
-
-      const isValid = await authenticator.verify({
-        token: totpCode,
-        secret: user.totpSecret,
-      });
-      if (!isValid) {
-        return NextResponse.json(
-          { errorString: "Invalid TOTP code", totpRequired: true },
-          { status: 401 }
-        );
-      }
     }
 
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || "");

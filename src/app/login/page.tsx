@@ -9,7 +9,6 @@ import { setAuthCookie } from "../actions";
 export default function Login() {
 
   const [error, setError] = useState<string | null>(null);
-  const [totpRequired, setTotpRequired] = useState<boolean>(false);
 
   const handleSubmit = async (formData: FormData) => {
     setError(null);
@@ -27,15 +26,6 @@ export default function Login() {
       return;
     }
 
-    let totpCode = null;
-    if (totpRequired) {
-      totpCode = formData.get("totpCode") as string;
-      if (!totpCode || totpCode.length !== 6) {
-        setError("Invalid TOTP code");
-        return;
-      }
-    }
-
     try {
       const res = await fetch("/api/login", {
         method: "POST",
@@ -45,7 +35,6 @@ export default function Login() {
         body: JSON.stringify({
           email,
           password,
-          totpCode,
         }),
       });
 
@@ -53,9 +42,8 @@ export default function Login() {
         const { token } = await res.json();
         setAuthCookie(token);
       } else if (res.status === 401) {
-        const { errorString, totpRequired } = await res.json();
+        const { errorString } = await res.json();
         setError(errorString);
-        setTotpRequired(totpRequired);
       } else {
         setError("Server error");
       }
@@ -129,27 +117,6 @@ export default function Login() {
                 />
               </div>
             </div>
-
-            {totpRequired && (
-              <div>
-                <label
-                  htmlFor="totpCode"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  TOTP Code
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="totpCode"
-                    name="totpCode"
-                    type="text"
-                    autoComplete="totpCode"
-                    required
-                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  />
-                </div>
-              </div>
-            )}
 
             <div>
               <button
