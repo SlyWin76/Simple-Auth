@@ -11,7 +11,10 @@ const userSchema = new Schema(
     },
     password: {
       type: String,
-      required: true,
+    },
+    googleId: {
+      type: String,
+      unique: true,
     },
   },
   { timestamps: true }
@@ -22,4 +25,6 @@ export default mongoose.models.User || mongoose.model("User", userSchema);
 export type UserDocument = {
   _id: string;
   email: string;
+  googleId: string;
+  password: string;
 };

@@ -5,10 +5,14 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { setAuthCookie } from "../actions";
+import { SignInWithProvider } from "../actions";
+
+
 
 export default function Login() {
 
   const [error, setError] = useState<string | null>(null);
+
 
   const handleSubmit = async (formData: FormData) => {
     setError(null);
@@ -140,6 +144,11 @@ export default function Login() {
               Register
             </Link>
           </p>
+
+          <div>
+            {/* <button onClick={() => SignInWithProvider}>Se connecter avec Google</button> */}
+            <Link href="https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=434602169782-t30f4445vjc522c8aip2mn607nm9q84e&redirect_uri=http://localhost:3000/google-callback&scope=email%20profile&state=someStateValue&prompt=consent">Se connecter avec google</Link>
+          </div>
         </div>
       </div>
     </>

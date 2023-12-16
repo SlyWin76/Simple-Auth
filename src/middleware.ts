@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import * as jose from "jose";
 
-const routeThatDidntRequireAuth = ["/login", "/register"];
+const routeThatDidntRequireAuth = ["/login", "/register", "/google-callback"];
 
 export async function middleware(request: NextRequest) {
   const cookiesList = cookies();
